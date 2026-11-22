@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home AI Stack · Architecture</title>
+<meta name="description" content="Interactive architecture diagram of a self-hosted, tailnet-only personal AI stack.">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { color-scheme: dark; --acc: #22d3ee; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #020617; color: #e2e8f0; font-family: 'JetBrains Mono', ui-monospace, monospace; padding: 28px 20px 36px; }
+  .wrap { max-width: 1240px; margin: 0 auto; }
+  .header h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; display: flex; align-items: center; gap: 10px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: #34d399; box-shadow: 0 0 12px #34d399; animation: pulse 2s infinite; flex: none; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .header p { color: #64748b; font-size: 12px; margin-top: 6px; }
+  .toolbar { display: flex; align-items: center; gap: 8px; margin: 18px 0 10px; flex-wrap: wrap; }
+  .btn { font: inherit; font-size: 13px; font-weight: 600; color: #e2e8f0; background: #0f172a; border: 1px solid #334155; border-radius: 8px; min-width: 40px; height: 36px; padding: 0 12px; cursor: pointer; transition: background .08s, border-color .08s, transform .08s; -webkit-tap-highlight-color: transparent; user-select: none; }
+  .btn:hover { border-color: var(--acc); }
+  .btn:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+  .btn:active, .btn.pressed { background: rgba(34,211,238,0.25); border-color: var(--acc); transform: scale(0.94); }
+  .btn:disabled { opacity: .35; cursor: default; transform: none; }
+  .zoom { font-size: 12px; color: #94a3b8; min-width: 52px; text-align: center; padding: 0 4px; transition: color .15s; }
+  .zoom.flash { color: var(--acc); }
+  .hint { font-size: 11px; color: #64748b; margin-left: auto; }
+  .viewport { position: relative; border: 1px solid #1e293b; border-radius: 12px; background: #020617; overflow: hidden; aspect-ratio: 1240 / 920; touch-action: none; cursor: grab; outline: none; }
+  .viewport:focus-visible { border-color: var(--acc); }
+  .viewport.dragging { cursor: grabbing; border-color: #334155; }
+  .viewport svg { width: 100%; height: 100%; display: block; user-select: none; -webkit-user-select: none; }
+  .viewport:fullscreen { aspect-ratio: auto; border-radius: 0; border: 0; }
+  .cards { margin-top: 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .card { border: 1px solid #1e293b; border-radius: 10px; background: #0b1120; padding: 16px 18px; }
+  .card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .card-header h3 { font-size: 13px; font-weight: 600; }
+  .card-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .card-dot.cyan { background: #22d3ee; } .card-dot.emerald { background: #34d399; } .card-dot.rose { background: #fb7185; }
+  .card ul { list-style: none; }
+  .card li { font-size: 11px; color: #94a3b8; line-height: 1.75; }
+  .card li b { color: #e2e8f0; font-weight: 600; }
+  .footer { margin-top: 20px; color: #475569; font-size: 10px; text-align: center; }
+  .footer a { color: #64748b; }
+  @media (max-width: 820px) { .cards { grid-template-columns: 1fr; } .hint { margin-left: 0; width: 100%; } body { padding: 18px 12px 28px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="header">
+  <h1><span class="dot"></span>Home Server Personal AI Stack</h1>
+  <p>Fedora 45 · podman + systemd · everything behind the Tailscale tailnet, nothing exposed to the internet</p>
+</div>
+
+<div class="toolbar" role="toolbar" aria-label="Diagram controls">
+  <button class="btn" id="zin" type="button" aria-label="Zoom in" title="Zoom in (+)">+</button>
+  <button class="btn" id="zout" type="button" aria-label="Zoom out" title="Zoom out (-)">&minus;</button>
+  <span class="zoom" id="pct" aria-live="polite">100%</span>
+  <button class="btn" id="fit" type="button" title="Reset view (0)">Reset</button>
+  <button class="btn" id="fs" type="button" title="Fullscreen (F)">Fullscreen</button>
+  <span class="hint" id="hint">Scroll or pinch to zoom · drag to pan · double-click to zoom in</span>
+</div>
+
+<div class="viewport" id="vp" tabindex="0" aria-label="Diagram viewport. Plus and minus zoom, arrow keys pan, 0 resets.">
+<svg id="dia" viewBox="0 0 1240 920" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Home AI stack architecture diagram" font-family="JetBrains Mono, monospace">
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+    </pattern>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/></marker>
+    <marker id="arrow-sl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/></marker>
+    <marker id="arrow-rose" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#fb7185"/></marker>
+    <marker id="arrow-em" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#34d399"/></marker>
+    <marker id="arrow-vi" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#a78bfa"/></marker>
+    <marker id="arrow-am" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#fbbf24"/></marker>
+  </defs>
+  <rect width="1240" height="920" fill="#020617"/>
+  <rect width="1240" height="920" fill="url(#grid)"/>
+
+  <!-- ===== ARROWS (behind boxes) ===== -->
+  <g fill="none" stroke-width="1.5">
+    <path d="M 240 184 L 240 220" stroke="#fbbf24" marker-end="url(#arrow-am)"/>
+    <path d="M 620 184 L 620 220" stroke="#fbbf24" marker-end="url(#arrow-am)"/>
+    <path d="M 1000 184 L 1000 220" stroke="#fbbf24" marker-end="url(#arrow-am)"/>
+    <path d="M 186 248 L 186 318" stroke="#fbbf24" marker-end="url(#arrow-am)"/>
+    <path d="M 403 248 L 403 318" stroke="#fbbf24" marker-end="url(#arrow-am)"/>
+    <path d="M 620 248 L 620 318" stroke="#fbbf24" marker-end="url(#arrow-am)"/>
+    <path d="M 837 248 L 837 318" stroke="#fbbf24" marker-end="url(#arrow-am)"/>
+    <path d="M 1054 248 L 1054 318" stroke="#fbbf24" marker-end="url(#arrow-am)"/>
+    <path d="M 186 378 L 186 416" stroke="#64748b" marker-end="url(#arrow)"/>
+    <path d="M 403 378 L 403 416" stroke="#64748b" marker-end="url(#arrow)"/>
+    <path d="M 620 378 L 620 416" stroke="#64748b" marker-end="url(#arrow)"/>
+    <path d="M 837 378 L 837 416" stroke="#64748b" marker-end="url(#arrow)"/>
+    <path d="M 1054 378 L 1054 416" stroke="#64748b" marker-end="url(#arrow)"/>
+    <path d="M 186 490 L 186 546" stroke="#a78bfa" marker-start="url(#arrow-vi)" marker-end="url(#arrow-vi)"/>
+    <path d="M 282 578 L 305 578" stroke="#34d399" marker-end="url(#arrow-em)"/>
+    <path d="M 403 490 L 403 534" stroke="#34d399" marker-end="url(#arrow-em)"/>
+    <path d="M 403 622 L 403 666" stroke="#a78bfa" marker-end="url(#arrow-vi)"/>
+    <path d="M 499 562 L 620 562 L 620 492" stroke="#34d399" marker-end="url(#arrow-em)"/>
+    <path d="M 499 604 L 790 604 L 790 828" stroke="#fb7185" stroke-dasharray="6,4" marker-end="url(#arrow-rose)"/>
+    <path d="M 1000 490 L 1000 828" stroke="#fb7185" stroke-dasharray="6,4" marker-end="url(#arrow-rose)"/>
+    <path d="M 1110 490 L 1110 828" stroke="#94a3b8" stroke-dasharray="2,3" marker-end="url(#arrow-sl)"/>
+  </g>
+
+  <g font-size="9">
+    <text x="196" y="522" fill="#a78bfa">mautrix · E2EE</text>
+    <text x="413" y="516" fill="#34d399">chat</text>
+    <text x="630" y="530" fill="#34d399">inference</text>
+    <text x="798" y="730" fill="#fb7185">web tools · opt-in cloud LLM</text>
+    <text x="992" y="660" fill="#fb7185" text-anchor="end">YouTube fetch</text>
+    <text x="1118" y="740" fill="#94a3b8">LAN</text>
+    <text x="1118" y="752" fill="#94a3b8">cast</text>
+  </g>
+
+  <!-- ===== TAILNET BOUNDARY ===== -->
+  <rect x="30" y="20" width="1180" height="770" rx="12" fill="none" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="8,4"/>
+  <text x="46" y="44" fill="#fbbf24" font-size="11" font-weight="600">TAILSCALE TAILNET · private overlay network · zero internet-facing ports</text>
+
+  <!-- ===== DEVICES ===== -->
+  <rect x="90" y="62" width="300" height="122" rx="6" fill="#0f172a"/>
+  <rect x="90" y="62" width="300" height="122" rx="6" fill="rgba(8,51,68,0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+  <text x="106" y="86" fill="#22d3ee" font-size="13" font-weight="600">Phone</text>
+  <text x="106" y="104" fill="#94a3b8" font-size="9">Android · tailnet peer</text>
+  <text x="106" y="126" fill="#e2e8f0" font-size="10">• Element X → Matrix (E2EE)</text>
+  <text x="106" y="143" fill="#e2e8f0" font-size="10">• Browser → Hermes dashboard</text>
+  <text x="106" y="160" fill="#e2e8f0" font-size="10">• HushTube app → :443</text>
+  <text x="106" y="176" fill="#64748b" font-size="9">+ Termux: phone-local Hermes agent</text>
+
+  <rect x="470" y="62" width="300" height="122" rx="6" fill="#0f172a"/>
+  <rect x="470" y="62" width="300" height="122" rx="6" fill="rgba(8,51,68,0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+  <text x="486" y="86" fill="#22d3ee" font-size="13" font-weight="600">Laptop</text>
+  <text x="486" y="104" fill="#94a3b8" font-size="9">Windows · tailnet peer</text>
+  <text x="486" y="126" fill="#e2e8f0" font-size="10">• Hermes desktop app → dashboard</text>
+  <text x="486" y="143" fill="#e2e8f0" font-size="10">• Browser → dashboard</text>
+  <text x="486" y="160" fill="#e2e8f0" font-size="10">• SSH → home-server</text>
+
+  <rect x="850" y="62" width="300" height="122" rx="6" fill="#0f172a"/>
+  <rect x="850" y="62" width="300" height="122" rx="6" fill="rgba(30,41,59,0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="866" y="86" fill="#cbd5e1" font-size="13" font-weight="600">Any tailnet peer</text>
+  <text x="866" y="104" fill="#94a3b8" font-size="9">authenticated devices only</text>
+  <text x="866" y="126" fill="#e2e8f0" font-size="10">• VNC client → krfb desktop</text>
+  <text x="866" y="143" fill="#e2e8f0" font-size="10">• Browser → HushTube web UI</text>
+  <text x="866" y="160" fill="#e2e8f0" font-size="10">• OpenAI-style client → :8732</text>
+
+  <!-- ===== MESH BUS ===== -->
+  <rect x="90" y="222" width="1060" height="26" rx="13" fill="#0f172a"/>
+  <rect x="90" y="222" width="1060" height="26" rx="13" fill="rgba(120,53,15,0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+  <text x="620" y="239" fill="#fbbf24" font-size="10" font-weight="600" text-anchor="middle">WireGuard mesh · MagicDNS · tailnet TLS certs</text>
+
+  <!-- ===== SERVER BOUNDARY ===== -->
+  <rect x="60" y="286" width="1120" height="474" rx="12" fill="none" stroke="#22d3ee" stroke-width="1.5" stroke-dasharray="4,4"/>
+  <rect x="199" y="276" width="190" height="20" rx="4" fill="#020617" stroke="#22d3ee" stroke-width="1"/>
+  <text x="294" y="290" fill="#22d3ee" font-size="11" font-weight="600" text-anchor="middle">home-server · Fedora 45</text>
+
+  <!-- ===== R1: TAILNET FRONTS ===== -->
+  <g font-size="9">
+    <rect x="90" y="320" width="192" height="58" rx="6" fill="#0f172a"/>
+    <rect x="90" y="320" width="192" height="58" rx="6" fill="rgba(120,53,15,0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+    <text x="104" y="344" fill="#fbbf24" font-size="12" font-weight="600">Serve :8444</text>
+    <text x="104" y="362" fill="#94a3b8">HTTPS · Matrix client API</text>
+
+    <rect x="307" y="320" width="192" height="58" rx="6" fill="#0f172a"/>
+    <rect x="307" y="320" width="192" height="58" rx="6" fill="rgba(120,53,15,0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+    <text x="321" y="344" fill="#fbbf24" font-size="12" font-weight="600">Serve :9443</text>
+    <text x="321" y="362" fill="#94a3b8">HTTPS · Hermes dashboard</text>
+
+    <rect x="524" y="320" width="192" height="58" rx="6" fill="#0f172a"/>
+    <rect x="524" y="320" width="192" height="58" rx="6" fill="rgba(120,53,15,0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+    <text x="538" y="344" fill="#fbbf24" font-size="12" font-weight="600">Serve :8732</text>
+    <text x="538" y="362" fill="#94a3b8">OpenAI-compatible API</text>
+
+    <rect x="741" y="320" width="192" height="58" rx="6" fill="#0f172a"/>
+    <rect x="741" y="320" width="192" height="58" rx="6" fill="rgba(120,53,15,0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+    <text x="755" y="344" fill="#fbbf24" font-size="12" font-weight="600">VNC :5900</text>
+    <text x="755" y="362" fill="#94a3b8">firewalled to tailnet</text>
+
+    <rect x="958" y="320" width="192" height="58" rx="6" fill="#0f172a"/>
+    <rect x="958" y="320" width="192" height="58" rx="6" fill="rgba(120,53,15,0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+    <text x="972" y="344" fill="#fbbf24" font-size="12" font-weight="600">Serve :443</text>
+    <text x="972" y="362" fill="#94a3b8">HTTPS · HushTube</text>
+  </g>
+
+  <!-- ===== R2: SERVICES ===== -->
+  <g font-size="9">
+    <rect x="90" y="418" width="192" height="72" rx="6" fill="#0f172a"/>
+    <rect x="90" y="418" width="192" height="72" rx="6" fill="rgba(76,29,149,0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="104" y="442" fill="#a78bfa" font-size="12" font-weight="600">continuwuity</text>
+    <text x="104" y="460" fill="#94a3b8">Matrix homeserver · podman</text>
+    <text x="104" y="474" fill="#94a3b8">unfederated · reg closed</text>
+
+    <rect x="307" y="418" width="192" height="72" rx="6" fill="#0f172a"/>
+    <rect x="307" y="418" width="192" height="72" rx="6" fill="rgba(6,78,59,0.4)" stroke="#34d399" stroke-width="1.5"/>
+    <text x="321" y="442" fill="#34d399" font-size="12" font-weight="600">hermes-dashboard</text>
+    <text x="321" y="460" fill="#94a3b8">web UI · sessions · cron</text>
+    <text x="321" y="474" fill="#94a3b8">basic-auth gate</text>
+
+    <rect x="524" y="418" width="192" height="72" rx="6" fill="#0f172a"/>
+    <rect x="524" y="418" width="192" height="72" rx="6" fill="rgba(6,78,59,0.4)" stroke="#34d399" stroke-width="1.5"/>
+    <text x="538" y="442" fill="#34d399" font-size="12" font-weight="600">model server</text>
+    <text x="538" y="460" fill="#94a3b8">open-weight LLM · local GPU</text>
+    <text x="538" y="474" fill="#94a3b8">bound to localhost</text>
+
+    <rect x="741" y="418" width="192" height="72" rx="6" fill="#0f172a"/>
+    <rect x="741" y="418" width="192" height="72" rx="6" fill="rgba(30,41,59,0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+    <text x="755" y="442" fill="#cbd5e1" font-size="12" font-weight="600">krfb</text>
+    <text x="755" y="460" fill="#94a3b8">KDE remote desktop</text>
+    <text x="755" y="474" fill="#94a3b8">password auth</text>
+
+    <rect x="958" y="418" width="192" height="72" rx="6" fill="#0f172a"/>
+    <rect x="958" y="418" width="192" height="72" rx="6" fill="rgba(251,146,60,0.3)" stroke="#fb923c" stroke-width="1.5"/>
+    <text x="972" y="442" fill="#fb923c" font-size="12" font-weight="600">HushTube</text>
+    <text x="972" y="460" fill="#94a3b8">nginx cache · Invidious · db</text>
+    <text x="972" y="474" fill="#94a3b8">castbridge · apkserve</text>
+  </g>
+
+  <!-- ===== R3/R4: HERMES CORE ===== -->
+  <g font-size="9">
+    <rect x="90" y="548" width="192" height="60" rx="6" fill="#0f172a"/>
+    <rect x="90" y="548" width="192" height="60" rx="6" fill="rgba(6,78,59,0.4)" stroke="#34d399" stroke-width="1.5"/>
+    <text x="104" y="572" fill="#34d399" font-size="12" font-weight="600">hermes-gateway</text>
+    <text x="104" y="590" fill="#94a3b8">@hermes bot · room-scoped</text>
+
+    <rect x="307" y="536" width="192" height="86" rx="6" fill="#0f172a"/>
+    <rect x="307" y="536" width="192" height="86" rx="6" fill="rgba(6,78,59,0.55)" stroke="#34d399" stroke-width="2.2"/>
+    <text x="321" y="561" fill="#34d399" font-size="14" font-weight="700">Hermes agent</text>
+    <text x="321" y="580" fill="#94a3b8">tools · skills · memory</text>
+    <text x="321" y="596" fill="#34d399">default model: local</text>
+    <text x="321" y="611" fill="#94a3b8">cloud models: opt-in</text>
+
+    <rect x="307" y="668" width="192" height="56" rx="6" fill="#0f172a"/>
+    <rect x="307" y="668" width="192" height="56" rx="6" fill="rgba(76,29,149,0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="321" y="691" fill="#a78bfa" font-size="12" font-weight="600">state.db</text>
+    <text x="321" y="709" fill="#94a3b8">sessions · transcripts</text>
+
+    <text x="538" y="700" fill="#22d3ee" opacity="0.85">podman + systemd user units</text>
+    <text x="538" y="714" fill="#64748b">most start at boot via linger</text>
+  </g>
+
+  <!-- ===== OUTSIDE TAILNET ===== -->
+  <rect x="366" y="830" width="652" height="58" rx="6" fill="#0f172a"/>
+  <rect x="366" y="830" width="652" height="58" rx="6" fill="rgba(30,41,59,0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="382" y="854" fill="#cbd5e1" font-size="12" font-weight="600">Internet</text>
+  <text x="382" y="872" fill="#94a3b8" font-size="9">web search · YouTube · opt-in cloud models · updates · DNS · Tailscale coordination</text>
+
+  <rect x="1046" y="830" width="164" height="58" rx="6" fill="#0f172a"/>
+  <rect x="1046" y="830" width="164" height="58" rx="6" fill="rgba(30,41,59,0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="1062" y="854" fill="#cbd5e1" font-size="12" font-weight="600">Android TV</text>
+  <text x="1062" y="872" fill="#94a3b8" font-size="9">home LAN · cast target</text>
+
+  <!-- ===== LEGEND ===== -->
+  <g font-size="9">
+    <rect x="30" y="814" width="310" height="90" rx="6" fill="#0b1120" stroke="#1e293b" stroke-width="1"/>
+    <text x="44" y="831" fill="#64748b" font-size="8" font-weight="600">LEGEND</text>
+    <rect x="44" y="840" width="10" height="10" rx="2" fill="rgba(8,51,68,0.4)" stroke="#22d3ee"/>
+    <text x="60" y="849" fill="#94a3b8">client device</text>
+    <rect x="44" y="858" width="10" height="10" rx="2" fill="rgba(120,53,15,0.3)" stroke="#fbbf24"/>
+    <text x="60" y="867" fill="#94a3b8">tailnet front</text>
+    <rect x="44" y="876" width="10" height="10" rx="2" fill="rgba(6,78,59,0.4)" stroke="#34d399"/>
+    <text x="60" y="885" fill="#94a3b8">Hermes / AI</text>
+    <rect x="164" y="840" width="10" height="10" rx="2" fill="rgba(76,29,149,0.4)" stroke="#a78bfa"/>
+    <text x="180" y="849" fill="#94a3b8">Matrix / data</text>
+    <rect x="164" y="858" width="10" height="10" rx="2" fill="rgba(251,146,60,0.3)" stroke="#fb923c"/>
+    <text x="180" y="867" fill="#94a3b8">media stack</text>
+    <line x1="160" y1="881" x2="178" y2="881" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,3"/>
+    <text x="184" y="885" fill="#94a3b8">internet egress</text>
+    <line x1="160" y1="897" x2="178" y2="897" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="2,3"/>
+    <text x="184" y="900" fill="#94a3b8">home LAN</text>
+  </g>
+</svg>
+</div>
+
+<div class="cards">
+  <div class="card">
+    <div class="card-header"><div class="card-dot cyan"></div><h3>Access paths</h3></div>
+    <ul>
+      <li><b>Element X</b> → :8444 → continuwuity → @hermes bot</li>
+      <li><b>Browser / desktop app</b> → :9443 → dashboard</li>
+      <li><b>VNC</b> → :5900 → krfb remote desktop</li>
+      <li><b>HushTube</b> → :443 → nginx cache → Invidious</li>
+      <li><b>Model API</b> → :8732 → local model server</li>
+      <li><b>Cast</b> → castbridge → Android TV (LAN)</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-header"><div class="card-dot emerald"></div><h3>Boot chain</h3></div>
+    <ul>
+      <li><b>Boot:</b> tailscaled → Serve rules</li>
+      <li><b>Linger:</b> Matrix, model server, dashboard, gateway, HushTube stack, castbridge, apkserve start with no login</li>
+      <li><b>GUI login:</b> Plasma, krfb, autostart apps</li>
+      <li><b>Manual:</b> Hermes desktop app (on clients)</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-header"><div class="card-dot rose"></div><h3>Privacy posture</h3></div>
+    <ul>
+      <li>Tailnet-only access · <b>zero internet-facing ports</b></li>
+      <li>Matrix unfederated · registration closed</li>
+      <li>E2EE required (Element X ↔ bot)</li>
+      <li>Default model: <b>open weights on a local GPU</b>; cloud models opt-in per session</li>
+      <li>Egress: web tools, YouTube via Invidious, opt-in cloud models, updates, DNS</li>
+    </ul>
+  </div>
+</div>
+
+<div class="footer">home-server · tailnet-only · generated 2026-11-22 · <a href="https://github.com/dsmelton">github.com/dsmelton</a></div>
+</div>
+
+<script>
+(() => {
+  const vp = document.getElementById('vp'), svg = document.getElementById('dia');
+  const pct = document.getElementById('pct');
+  const zin = document.getElementById('zin'), zout = document.getElementById('zout');
+  const B = { w: 1240, h: 920 }, MIN_W = B.w / 8;
+  let vb = { x: 0, y: 0, w: B.w, h: B.h };
+
+  function clamp() {
+    vb.w = Math.min(B.w, Math.max(MIN_W, vb.w));
+    vb.h = vb.w * B.h / B.w;
+    vb.x = Math.min(B.w - vb.w, Math.max(0, vb.x));
+    vb.y = Math.min(B.h - vb.h, Math.max(0, vb.y));
+  }
+  let flashT;
+  function apply() {
+    clamp();
+    svg.setAttribute('viewBox', vb.x + ' ' + vb.y + ' ' + vb.w + ' ' + vb.h);
+    const z = B.w / vb.w;
+    pct.textContent = Math.round(z * 100) + '%';
+    pct.classList.add('flash'); clearTimeout(flashT); flashT = setTimeout(() => pct.classList.remove('flash'), 250);
+    zin.disabled = z >= 7.99; zout.disabled = z <= 1.001;
+  }
+  function toSvg(cx, cy) {
+    const p = svg.createSVGPoint(); p.x = cx; p.y = cy;
+    return p.matrixTransform(svg.getScreenCTM().inverse());
+  }
+  function center() { const r = svg.getBoundingClientRect(); return toSvg(r.left + r.width / 2, r.top + r.height / 2); }
+  function zoomAt(f, pt) {
+    const nw = Math.min(B.w, Math.max(MIN_W, vb.w / f)), k = nw / vb.w;
+    vb.x = pt.x - (pt.x - vb.x) * k; vb.y = pt.y - (pt.y - vb.y) * k;
+    vb.w = nw; apply();
+  }
+  function reset() { vb = { x: 0, y: 0, w: B.w, h: B.h }; apply(); }
+
+  // instant press feedback on touch devices, where :active can lag or be skipped
+  document.querySelectorAll('.btn').forEach(b => b.addEventListener('pointerdown', () => {
+    b.classList.add('pressed'); setTimeout(() => b.classList.remove('pressed'), 160);
+  }));
+  zin.addEventListener('click', () => zoomAt(1.5, center()));
+  zout.addEventListener('click', () => zoomAt(1 / 1.5, center()));
+  document.getElementById('fit').addEventListener('click', reset);
+  const fsBtn = document.getElementById('fs');
+  if (!vp.requestFullscreen) fsBtn.style.display = 'none';
+  fsBtn.addEventListener('click', () => document.fullscreenElement ? document.exitFullscreen() : vp.requestFullscreen());
+  document.addEventListener('fullscreenchange', () => { fsBtn.textContent = document.fullscreenElement ? 'Exit fullscreen' : 'Fullscreen'; vp.focus(); });
+
+  vp.addEventListener('wheel', e => {
+    e.preventDefault();
+    const d = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+    zoomAt(Math.exp(-d * 0.0015), toSvg(e.clientX, e.clientY));
+  }, { passive: false });
+  vp.addEventListener('dblclick', e => zoomAt(e.shiftKey ? 0.5 : 2, toSvg(e.clientX, e.clientY)));
+
+  const pts = new Map(); let pinch = null;
+  vp.addEventListener('pointerdown', e => {
+    vp.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    vp.classList.add('dragging');
+    if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = Math.hypot(a.x - b.x, a.y - b.y); }
+  });
+  vp.addEventListener('pointermove', e => {
+    if (!pts.has(e.pointerId)) return;
+    const prev = pts.get(e.pointerId), cur = { x: e.clientX, y: e.clientY };
+    if (pts.size === 1) {
+      const p0 = toSvg(prev.x, prev.y), p1 = toSvg(cur.x, cur.y);
+      vb.x -= p1.x - p0.x; vb.y -= p1.y - p0.y; apply();
+    }
+    pts.set(e.pointerId, cur);
+    if (pts.size === 2 && pinch) {
+      const [a, b] = [...pts.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (d > 0) { zoomAt(d / pinch, toSvg((a.x + b.x) / 2, (a.y + b.y) / 2)); pinch = d; }
+    }
+  });
+  const up = e => { pts.delete(e.pointerId); if (pts.size < 2) pinch = null; if (!pts.size) vp.classList.remove('dragging'); };
+  vp.addEventListener('pointerup', up); vp.addEventListener('pointercancel', up);
+
+  vp.addEventListener('keydown', e => {
+    const step = vb.w * 0.1, k = e.key;
+    if (k === '+' || k === '=') zoomAt(1.25, center());
+    else if (k === '-' || k === '_') zoomAt(0.8, center());
+    else if (k === '0') reset();
+    else if (k === 'f' || k === 'F') fsBtn.click();
+    else if (k === 'ArrowLeft') { vb.x -= step; apply(); }
+    else if (k === 'ArrowRight') { vb.x += step; apply(); }
+    else if (k === 'ArrowUp') { vb.y -= step; apply(); }
+    else if (k === 'ArrowDown') { vb.y += step; apply(); }
+    else return;
+    e.preventDefault();
+  });
+  if (!matchMedia('(hover: hover)').matches) document.getElementById('hint').textContent = 'Pinch to zoom · drag to pan · or use the buttons';
+  apply();
+})();
+</script>
+</body>
+</html>
